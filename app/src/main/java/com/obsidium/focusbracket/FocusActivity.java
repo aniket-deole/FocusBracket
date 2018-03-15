@@ -3,6 +3,7 @@ package com.obsidium.focusbracket;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Pair;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -10,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.github.ma1co.openmemories.framework.DisplayManager;
 import com.github.ma1co.pmcademo.app.BaseActivity;
 import com.sony.scalar.hardware.CameraEx;
 import com.sony.scalar.sysutil.ScalarProperties;
@@ -17,6 +19,7 @@ import com.sony.scalar.sysutil.ScalarProperties;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 public class FocusActivity extends BaseActivity implements SurfaceHolder.Callback, CameraEx.ShutterListener
 {
@@ -142,6 +145,20 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
             }
         });
 
+        m_camera.setPreviewMagnificationListener(new CameraEx.PreviewMagnificationListener() {
+            @Override
+            public void onChanged(boolean b, int i, int i1, Pair pair, CameraEx cameraEx) {
+                Logger.info ("PreviewMagnificationListener OnChanged: "+ b +
+                 ", " + i + ", " + i1 + ", " + pair.toString());
+            }
+
+            @Override
+            public void onInfoUpdated(boolean b, Pair pair, CameraEx cameraEx) {
+                Logger.info ("PreviewMagnificationListener onInfoUpdated: "+ b +
+                        ", " + ", " + pair.toString());
+            }
+        });
+
         setDefaults();
         setState(State.setMin);
     }
@@ -214,6 +231,9 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
         m_tvMsg.setVisibility(View.VISIBLE);
         m_tvInstructions.setText(String.format("%d remaining", m_focusQueue.size()));
         m_tvInstructions.setVisibility(View.VISIBLE);
+        m_camera.getNormalCamera().
+                DisplayManager displayManager = DisplayManager.create(getApplicationContext());
+        int displayWidth = displayManager.getActiveDisplayInfo().width;
         focus();
     }
 
@@ -288,6 +308,21 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
      */
     private void setDefaults()
     {
+        final Camera.Parameters paramsDefault = m_camera.getSupportedParameters();
+        final CameraEx.ParametersModifier modifiersDefault = m_camera.createParametersModifier(paramsDefault);
+        if (modifiersDefault != null) {
+            List<Integer> pair = modifiersDefault.getSupportedPreviewMagnification();
+            if (pair != null) {
+                for (Integer p : pair) {
+                    Logger.info("Supported PreviewMagnificationPair: " + p);
+                }
+            } else {
+                Logger.info ("pair is null");
+            }
+        } else {
+            Logger.info ("modifiersDefault isnull");
+        }
+
         final Camera.Parameters params = m_camera.createEmptyParameters();
         final CameraEx.ParametersModifier modifier = m_camera.createParametersModifier(params);
         params.setSceneMode(CameraEx.ParametersModifier.SCENE_MODE_MANUAL_EXPOSURE);
@@ -295,7 +330,22 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
         params.setFocusMode(CameraEx.ParametersModifier.FOCUS_MODE_MANUAL);
         modifier.setSelfTimer(0);
         m_camera.getNormalCamera().setParameters(params);
+        m_camera.startAutoZoom();
+        m_camera.setPreviewMagnification(200, new Pair(100, 200));
 
+        m_camera.setPreviewMagnificationListener(new CameraEx.PreviewMagnificationListener() {
+            @Override
+            public void onChanged(boolean b, int i, int i1, Pair pair, CameraEx cameraEx) {
+                Logger.info ("PreviewMagnificationListener OnChanged: "+ b +
+                        ", " + i + ", " + i1 + ", " + pair.first + ", " + pair.second);
+            }
+
+            @Override
+            public void onInfoUpdated(boolean b, Pair pair, CameraEx cameraEx) {
+                Logger.info ("PreviewMagnificationListener onInfoUpdated: "+ b +
+                        ", " + ", " + pair.toString());
+            }
+        });
         /*
             modifier.isFocusDriveSupported() returns false on ILCE-5100, focus drive is working anyway...
             This is how SmartRemote checks for it:

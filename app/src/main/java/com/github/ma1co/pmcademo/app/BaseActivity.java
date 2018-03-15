@@ -3,9 +3,17 @@ package com.github.ma1co.pmcademo.app;
 import android.app.Activity;
 import android.content.Intent;
 import android.view.KeyEvent;
+
+import com.obsidium.focusbracket.Logger;
 import com.sony.scalar.hardware.avio.DisplayManager;
 import com.sony.scalar.sysutil.ScalarInput;
 import com.sony.scalar.sysutil.didep.Gpelibrary;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import static com.obsidium.focusbracket.Logger.getFile;
 
 public class BaseActivity extends Activity {
     public static final String NOTIFICATION_DISPLAY_CHANGED = "NOTIFICATION_DISPLAY_CHANGED";
@@ -42,6 +50,7 @@ public class BaseActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        Logger.info("Keycode:" + keyCode + ", " + event);
         switch (event.getScanCode()) {
             case ScalarInput.ISV_KEY_UP:
                 return onUpKeyDown();
@@ -92,6 +101,7 @@ public class BaseActivity extends Activity {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        Logger.info("Keycode:" + keyCode + ", " + event);
         switch (event.getScanCode()) {
             case ScalarInput.ISV_KEY_UP:
                 return onUpKeyUp();
